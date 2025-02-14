@@ -9,11 +9,13 @@ class Color:
     YELLOW = "\033[33m"
     END = "\033[0m"
 
+levels = ["beginner", "intermediate", "advanced", "custom"]
+
 class Minesweeper:
     # build board and define how many mines/level
     def __init__(self):
         self.dict_board = {}
-        self.dict_space = {}
+        self.mines_and_nums = {}
         self.count_mines = 0
         self.count_flags = 0
         self.board_rows = 0
@@ -21,49 +23,46 @@ class Minesweeper:
         self.num_mines = 0
 
     def get_level(self):
-        choice = input("Please choose a level (Beginner, Intermediate, Advanced, Custom): ").lower()
-        return choice
-
-    def define_level(self):
         while True:
-            level = ["beginner", "intermediate", "advanced", "custom"]
-            choice = self.get_level()
-            if choice in level:
-                # beginner = 9x9 w/ 10 mines
-                if choice == level[0]:
-                    self.board_rows = 9
-                    self.board_cols = 9
-                    self.num_mines = 10
-                    break
-                # intermediate = 16x16 w/ 40 mines
-                elif choice == level[1]:
-                    self.board_rows = 16
-                    self.board_cols = 16
-                    self.num_mines = 40
-                    break
-                # advanced = 30x16 w/ 99 mines
-                elif choice == level[2]:
-                    self.board_rows = 16
-                    self.board_cols = 30
-                    self.num_mines = 99
-                    break
-                # custom = user inputs their custom level
-                elif choice == level[3]:
-                    while True:
-                        try:
-                            ### This causes the program to go on forever placing bombs :(
-                            self.board_rows = int(input("Please enter a number 1-80 for rows: "))
-                            self.board_cols = int(input("Please enter a number 1-80 for columns: "))
-                            self.num_mines = int(input("Please enter a number 1-99 for bombs: "))
-                            if 0 < self.board_rows <= 80 and 0 < self.board_cols <= 80 and 0 < self.num_mines <= 99 and self.num_mines < (self.board_rows * self.board_cols) / 2:
-                                break
-                            else: 
-                                print("Can't make a board like that! D:")
-                        except:
-                            print("Can't make a board like that! D:")
-                    break
+            choice = input("Please choose a level (Beginner, Intermediate, Advanced, Custom, Quit): ").lower()
+            if choice == 'quit':
+                raise SystemExit()
+            elif choice in levels:
+                return choice
             else:
                 print("What kind of level is that?!?!?! >:O")
+
+    def define_level(self):
+        choice = self.get_level()
+        # beginner = 9x9 w/ 10 mines
+        if choice == levels[0]:
+            self.board_rows = 9
+            self.board_cols = 9
+            self.num_mines = 10
+        # intermediate = 16x16 w/ 40 mines
+        elif choice == levels[1]:
+            self.board_rows = 16
+            self.board_cols = 16
+            self.num_mines = 40
+        # advanced = 30x16 w/ 99 mines
+        elif choice == levels[2]:
+            self.board_rows = 16
+            self.board_cols = 30
+            self.num_mines = 99
+        # custom = user inputs their custom level
+        else:
+            while True:
+                try:
+                    ### This causes the program to go on forever placing bombs :(
+                    self.board_rows = int(input("Please enter a number 1-80 for rows: "))
+                    self.board_cols = int(input("Please enter a number 1-80 for columns: "))
+                    self.num_mines = int(input("Please enter a number 1-99 for bombs: "))
+                    if 0 < self.board_rows <= 80 and 0 < self.board_cols <= 80 and 0 < self.num_mines <= 99 and self.num_mines < (self.board_rows * self.board_cols) / 2:
+                        break
+                    else: 
+                        print("Can't make a board like that! D:")
+                except:
+                    print("Can't make a board like that! D:")
 
     def make_board(self):
         # starts with board being printed in the terminal
@@ -74,28 +73,33 @@ class Minesweeper:
         for r in range(self.board_rows):
             for c in range(self.board_cols):
                 self.dict_board[(r, c)] = "O"
-        self.countSpaces = (self.board_rows * self.board_cols)
+        self.countSpaces = self.board_rows * self.board_cols
         self.print_board()
     
     def print_board(self):
+        print('   ' + ' '.join(str(c) for c in range(self.board_cols)))
+        print('  ' + '-' * (self.board_cols * 2 + 1))
+
         for r in range(self.board_rows):
+            print(r, end = ' | ')
             for c in range(self.board_cols):
                 print(self.dict_board[(r,c)], end = " ")
             print()
 
     def get_user_move(self):
         # when coordinate is inputed (row x column) checks the space
-        self.user = input("Please enter a 'coordinate' to uncover a space or 'X, coordinate' to place or remove a flag: ").upper()
-        self.user = self.user.translate(str.maketrans(string.punctuation, (" " * len(string.punctuation))))
-        self.user = self.user.split()
+        return (input("Please enter a 'coordinate' to uncover a space or 'X, coordinate' to place or remove a flag: ")
+                    .upper()
+                    .translate(str.maketrans(string.punctuation, (" " * len(string.punctuation))))
+                    .split())
 
     def make_move(self):
         while True:
-            self.get_user_move()
+            user = self.get_user_move()
             # determines if the user is inputting a space
-            if len(self.user) == 2:
+            if len(user) == 2:
                 try:
-                    self.move = tuple(map(int, self.user))
+                    self.move = tuple(map(int, user))
                     if self.move in self.dict_board:
                         self.is_flagging = False
                         break
@@ -104,9 +108,9 @@ class Minesweeper:
                 except:
                     print("NO! >:O")
             # determines if a user is inputting a flag
-            elif len(self.user) == 3 and self.user[0] == "X":
+            elif len(user) == 3 and user[0] == "X":
                 try:
-                    self.flag = tuple(map(int, self.user[1:]))
+                    self.flag = tuple(map(int, user[1:]))
                     if self.count_mines == 0:
                         print("You really want to place a flag on your first move?")
                     elif self.flag in self.dict_board:
@@ -142,13 +146,13 @@ class Minesweeper:
             coor_mine = mine_row, mine_cols
             # check if a mine is already there
             # if there is a mine already there, pass
-            if (coor_mine in self.dict_space and self.dict_space[coor_mine] == "*") or coor_mine == self.move:
+            if (coor_mine in self.mines_and_nums and self.mines_and_nums[coor_mine] == "*") or coor_mine == self.move:
                 # print(self.countMines)
                 pass
             # if the no mine / replace the space with mine
             # else:
-            elif coor_mine not in self.dict_space or self.dict_space[coor_mine] != "*":
-                self.dict_space[coor_mine] = "*"
+            elif coor_mine not in self.mines_and_nums or self.mines_and_nums[coor_mine] != "*":
+                self.mines_and_nums[coor_mine] = "*"
                 # if true will add a mine to the counter
                 self.count_mines += 1
                 self.place_nums(mine_row, mine_cols)
@@ -156,36 +160,37 @@ class Minesweeper:
     # def printMines(self):
     #     print(self.dictSpace)
 
+    def neighbors(self, row, col):
+        for r in range(row - 1, row + 2):
+            for c in range(col - 1, col + 2):
+                if r >= 0 and c >= 0 and r < self.board_rows and c < self.board_cols and (r != row or c != col):
+                    yield r, c
+
     # method will use the coordinates of the mines that are placed
     def place_nums(self, row, col):
         # finds coordinate of top left, top center, top right, left side, right side, bottom left, bottom center, bottom right surrounding the mine
-        spaceList = [(row - 1, col - 1), (row - 1, col), (row - 1, col + 1), (row, col - 1), (row, col + 1), (row + 1, col - 1), (row + 1, col), (row + 1, col + 1)]
-        # goes through the coordinates one by one
-        for space in spaceList:
-            # checks to see if the coordinate is a valid coordinate on the board - skips it if it is not
-            if space[0] < 0 or space[1] < 0 or space[0] > (self.board_rows - 1) or space[1] > (self.board_cols - 1):
-                continue
+        for space in self.neighbors(row, col):
             # if the coordinate is not in the dictionary yet, adds key and value
-            if space not in self.dict_space:
-                self.dict_space[space] = 1
+            if space not in self.mines_and_nums:
+                self.mines_and_nums[space] = 1
             # if the coordinate is already a key, increments the value up by 1
-            elif space in self.dict_space and self.dict_space[space] != "*": #and self.dictSpace[space] != "M":
-                self.dict_space[space] += 1
+            elif space in self.mines_and_nums and self.mines_and_nums[space] != "*":
+                self.mines_and_nums[space] += 1
 
     def check_move(self):
         if self.is_flagging == False:
         # if mine is there at coordinate - game over
             if self.dict_board[self.move] == "O":
-                if self.move in self.dict_space:
-                    if self.dict_space[self.move] != "*":
-                        self.dict_board[self.move] = self.dict_space[self.move]
+                if self.move in self.mines_and_nums:
+                    if self.mines_and_nums[self.move] != "*":
+                        self.dict_board[self.move] = self.mines_and_nums[self.move]
                         self.countSpaces -= 1
                         self.print_board()
                     else:
-                        self.dict_board[self.move] = self.dict_space[self.move]
+                        self.dict_board[self.move] = self.mines_and_nums[self.move]
                         self.print_board()
                         print("Game Over!")
-                        exit()
+                        raise SystemExit()
                 else:
                     self.dict_board[self.move] = " "
                     self.countSpaces -= 1
@@ -198,23 +203,21 @@ class Minesweeper:
 
 
     def uncover_space(self, row, col):
-        spaceList = [(row - 1, col - 1), (row - 1, col), (row - 1, col + 1), (row, col - 1), (row, col + 1), (row + 1, col - 1), (row + 1, col), (row + 1, col + 1)]
-        for space in spaceList:
-            if space[0] < 0 or space[1] < 0 or space[0] > (self.board_rows - 1) or space[1] > (self.board_cols - 1):
-                continue
+        for space in self.neighbors(row, col):
             if self.dict_board[space] == "O":
-                if space not in self.dict_space:
+                if space not in self.mines_and_nums:
                     self.dict_board[space] = " "
                     self.countSpaces -= 1
                     self.uncover_space(space[0], space[1])
-                elif space in self.dict_space and self.dict_space[space] != "*":
-                    self.dict_board[space] = self.dict_space[space]
+                elif space in self.mines_and_nums and self.mines_and_nums[space] != "*":
+                    self.dict_board[space] = self.mines_and_nums[space]
                     self.countSpaces -= 1
                     
     def user_win(self):
+        # when all the blank spaces are uncovered - winner is pronounced!
         if self.countSpaces == self.num_mines:
             print("Congrats you won! :D")
-            exit()
+            raise SystemExit()
 
     def game_play(self):
         self.user_win()
@@ -232,9 +235,3 @@ class Minesweeper:
 
 minesweeper = Minesweeper()
 minesweeper.start_game()
-# minesweeper.chooseLevel()
-# minesweeper.makeBoard()
-# minesweeper.gamePlay()
-
-# print out the board again so user can see what is available
-# when all the blank spaces are uncovered - winner is pronounced!
