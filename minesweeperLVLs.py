@@ -47,23 +47,23 @@ board_size_settings = [
     }
 ]
 
-class Minesweeper:
-    # build board and define how many mines/level
-    def __init__(self):
+class Board:
+    def __init__(self, rows, cols, mines):
         self.dict_board = {}
         self.mines_and_nums = {}
         self.count_flags = 0
-        self.board_rows = 0
-        self.board_cols = 0
-        self.num_mines = 0
+        self.board_rows = rows
+        self.board_cols = cols
+        self.countSpaces = self.board_rows * self.board_cols
+        self.num_mines = mines
+        self.make_board()
 
     def make_board(self):
         for r in range(self.board_rows):
             for c in range(self.board_cols):
                 self.dict_board[(r, c)] = "O"
-        self.countSpaces = self.board_rows * self.board_cols
         self.place_mines()
-    
+
     def place_mines(self):
         mines_to_place = ['*'] * self.num_mines + [' '] * ((self.board_rows * self.board_cols) - self.num_mines)
         random.shuffle(mines_to_place)
@@ -76,15 +76,8 @@ class Minesweeper:
                         self.mines_and_nums[coord] = "*"
                         self.place_nums(r, c)
 
-    def model_neighbors(self, row, col):
-        for r in range(row - 1, row + 2):
-            for c in range(col - 1, col + 2):
-                if r >= 0 and c >= 0 and r < self.board_rows and c < self.board_cols and (r != row or c != col):
-                    yield r, c
-
     # method will use the coordinates of the mines that are placed
     def place_nums(self, row, col):
-        # finds coordinate of top left, top center, top right, left side, right side, bottom left, bottom center, bottom right surrounding the mine
         for space in self.model_neighbors(row, col):
             # if the coordinate is not in the dictionary yet, adds key and value
             if space not in self.mines_and_nums:
@@ -105,6 +98,13 @@ class Minesweeper:
             for c in range(self.board_cols):
                 print(self.dict_board[(r,c)], end = " ")
             print()
+
+    def model_neighbors(self, row, col):
+        # finds neighboring spots in all 8 directions
+        for r in range(row - 1, row + 2):
+            for c in range(col - 1, col + 2):
+                if r >= 0 and c >= 0 and r < self.board_rows and c < self.board_cols and (r != row or c != col):
+                    yield r, c
 
     def model_toggle_flag(self, move_coord):
         if self.dict_board[move_coord] == "O":
@@ -161,6 +161,21 @@ class Minesweeper:
                     self.dict_board[space] = self.mines_and_nums[space]
                     self.countSpaces -= 1
 
+    def move_in_range(self, coord):
+        return coord in self.dict_board
+
+    def has_moved(self):
+        return self.countSpaces != self.board_rows * self.board_cols
+
+    def isGameWon(self):
+        # when all the blank spaces are uncovered - winner is pronounced!
+        return self.countSpaces == self.num_mines
+
+
+class Minesweeper:
+    def __init__(self):
+        self.board = None
+
     def get_level(self):
         while True:
             choice = input("Please choose a level (Beginner, Intermediate, Advanced, Custom, Quit): ").lower()
@@ -172,21 +187,24 @@ class Minesweeper:
                 print("What kind of level is that?!?!?! >:O")
 
     def define_level(self):
+        # Get dimensions and number of mines with which to construct the board
         choice = self.get_level()
         if choice in levels[:3]:
             i = levels.index(choice)
-            self.board_rows = board_size_settings[i]['board_rows']
-            self.board_cols = board_size_settings[i]['board_cols']
-            self.num_mines  = board_size_settings[i]['num_mines']
+            rows = board_size_settings[i]['board_rows']
+            cols = board_size_settings[i]['board_cols']
+            mines  = board_size_settings[i]['num_mines']
+            self.board = Board(rows, cols, mines)
         # custom level
         else:
             while True:
                 try:
-                    self.board_rows = int(input("Please enter a number 1-80 for rows: "))
-                    self.board_cols = int(input("Please enter a number 1-80 for columns: "))
-                    self.num_mines = int(input("Please enter a number 1-99 for bombs: "))
-                    if 0 < self.board_rows <= 80 and 0 < self.board_cols <= 80 and 0 < self.num_mines <= 99 and self.num_mines < (self.board_rows * self.board_cols) / 2:
-                        break
+                    rows = int(input("Please enter a number 1-80 for rows: "))
+                    cols = int(input("Please enter a number 1-80 for columns: "))
+                    mines = int(input("Please enter a number 1-99 for bombs: "))
+                    if 0 < rows <= 80 and 0 < cols <= 80 and 0 < mines < min(100, (board_rows * board_cols) / 2):
+                        self.board = Board(rows, cols, mines)
+                        return
                     else: 
                         print("Can't make a board like that! D:")
                 except:
@@ -207,10 +225,12 @@ class Minesweeper:
 
     def make_move(self):
         while True:
+            self.board.print_board()
+
             is_flagging, row, col = self.get_user_move()
             move_coord = row, col
 
-            if move_coord not in self.dict_board:
+            if not self.board.move_in_range(move_coord):
                 print("That's not even a space on the board >_>")
                 break
 
@@ -218,15 +238,14 @@ class Minesweeper:
                 self.check_move(move_coord)
                 break
             else:
-                is_first_move = self.countSpaces == self.board_rows * self.board_cols
-                if is_first_move:
+                if not self.board.has_moved():
                     print("You really want to place a flag on your first move?")
                 else:
                     self.toggle_flag(move_coord)
                     break
 
     def toggle_flag(self, move_coord):
-        res = self.model_toggle_flag(move_coord)
+        res = self.board.model_toggle_flag(move_coord)
 
         if res == FlagResult.NO_FLAGS_LEFT:
             print('You already placed as many flags as there are bombs.')
@@ -234,11 +253,8 @@ class Minesweeper:
         elif res == FlagResult.SPOT_CLEAR:
             print("You want to waste flag on a space you already uncovered??? o_O")
 
-        else:
-            self.print_board()
-
     def check_move(self, move_coord):
-        res = self.model_check_move(move_coord)
+        res = self.board.model_check_move(move_coord)
 
         if res == CheckResult.SPOT_FLAGGED:
             print("Uhmmm, you want to dig up a flag you put down??")
@@ -246,28 +262,15 @@ class Minesweeper:
         elif res == CheckResult.SPOT_ALREADY_SHOWN:
             print("You already uncovered this space -_-")
 
-        elif res == CheckResult.OK:
-            pass
-
-        elif res == CheckResult.EXPLODE:
-            print("Game Over!")
-            raise SystemExit()
-
-        self.print_board()
-
-    def user_win(self):
-        # when all the blank spaces are uncovered - winner is pronounced!
-        if self.countSpaces == self.num_mines:
-            print("Congrats you won! :D")
+        elif res == CheckResult.EXPLODE or (res == CheckResult.OK and self.board.isGameWon()):
+            self.board.print_board()
+            print("Game Over!" if res == CheckResult.EXPLODE else "Congrats you won! :D")
             raise SystemExit()
 
     def start_game(self):
         self.define_level()
-        self.make_board()
-        self.print_board()
         while True:
             self.make_move()
-            self.user_win()
 
 minesweeper = Minesweeper()
 minesweeper.start_game()
