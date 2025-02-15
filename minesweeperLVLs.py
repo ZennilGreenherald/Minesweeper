@@ -9,6 +9,8 @@ class Color:
     YELLOW = "\033[33m"
     END = "\033[0m"
 
+red_x = f"{Color.RED}X{Color.END}"
+
 levels = ["beginner", "intermediate", "advanced", "custom"]
 
 # beginner = 9x9 w/ 10 mines
@@ -35,7 +37,6 @@ class Minesweeper:
     def __init__(self):
         self.dict_board = {}
         self.mines_and_nums = {}
-        self.count_mines = 0
         self.count_flags = 0
         self.board_rows = 0
         self.board_cols = 0
@@ -78,7 +79,6 @@ class Minesweeper:
                 self.dict_board[(r, c)] = "O"
         self.countSpaces = self.board_rows * self.board_cols
         self.place_mines()
-        self.print_board()
     
     def place_mines(self):
         mines_to_place = ['*'] * self.num_mines + [' '] * ((self.board_rows * self.board_cols) - self.num_mines)
@@ -91,7 +91,17 @@ class Minesweeper:
                     if coord not in self.mines_and_nums or self.mines_and_nums[coord] != "*":
                         self.mines_and_nums[coord] = "*"
                         self.place_nums(r, c)
-                        self.count_mines += 1
+
+    # method will use the coordinates of the mines that are placed
+    def place_nums(self, row, col):
+        # finds coordinate of top left, top center, top right, left side, right side, bottom left, bottom center, bottom right surrounding the mine
+        for space in self.neighbors(row, col):
+            # if the coordinate is not in the dictionary yet, adds key and value
+            if space not in self.mines_and_nums:
+                self.mines_and_nums[space] = 1
+            # if the coordinate is already a key, increments the value up by 1
+            elif space in self.mines_and_nums and self.mines_and_nums[space] != "*":
+                self.mines_and_nums[space] += 1
 
     def print_board(self):
         max_row_num_width = len(str(self.board_rows - 1))
@@ -106,108 +116,97 @@ class Minesweeper:
                 print(self.dict_board[(r,c)], end = " ")
             print()
 
-    def get_user_move(self):
-        # when coordinate is inputed (row x column) checks the space
-        return (input("Please enter a 'coordinate' to uncover a space or 'X, coordinate' to place or remove a flag: ")
-                    .upper()
-                    .translate(str.maketrans(string.punctuation, (" " * len(string.punctuation))))
-                    .split())
-
-    def make_move(self):
-        while True:
-            user = self.get_user_move()
-            # determines if the user is inputting a space
-            if len(user) == 2:
-                try:
-                    self.move = tuple(map(int, user))
-                    if self.move in self.dict_board:
-                        self.is_flagging = False
-                        break
-                    else:
-                        print("That's not even a space on the board >_>")
-                except:
-                    print("NO! >:O")
-            # determines if a user is inputting a flag
-            elif len(user) == 3 and user[0] == "X":
-                try:
-                    self.flag = tuple(map(int, user[1:]))
-                    if self.count_mines == 0:
-                        print("You really want to place a flag on your first move?")
-                    elif self.flag in self.dict_board:
-                        self.toggle_flag()
-                        self.is_flagging = True
-                        break
-                    else:
-                        print("Sure. I can place a flag in the middle of nowhere for you! :D")
-                except:
-                    print("*BOOM* No flag for you! >:D")
-            else:
-                print("Invalid input.  Please try again.")
-                self.print_board()
-
-    def toggle_flag(self):
-        if self.count_flags <= self.num_mines:
-            if self.dict_board[self.flag] == "O":
-                self.dict_board[self.flag] = f"{Color.RED}X{Color.END}"
-                self.count_flags += 1
-                self.print_board()
-            elif self.dict_board[self.flag] == f"{Color.RED}X{Color.END}":
-                self.dict_board[self.flag] = "O"
-                self.count_flags -= 1
-                self.print_board()
-            else:
-                print("You want to waste flag on a space you already uncovered??? o_O")
-
     def neighbors(self, row, col):
         for r in range(row - 1, row + 2):
             for c in range(col - 1, col + 2):
                 if r >= 0 and c >= 0 and r < self.board_rows and c < self.board_cols and (r != row or c != col):
                     yield r, c
 
-    # method will use the coordinates of the mines that are placed
-    def place_nums(self, row, col):
-        # finds coordinate of top left, top center, top right, left side, right side, bottom left, bottom center, bottom right surrounding the mine
-        for space in self.neighbors(row, col):
-            # if the coordinate is not in the dictionary yet, adds key and value
-            if space not in self.mines_and_nums:
-                self.mines_and_nums[space] = 1
-            # if the coordinate is already a key, increments the value up by 1
-            elif space in self.mines_and_nums and self.mines_and_nums[space] != "*":
-                self.mines_and_nums[space] += 1
+    def get_user_move(self):
+        s = input("Please enter '<row> <col>' to uncover a space or 'X <row> <col>' to place or remove a flag: ")
+        ls = s.upper().translate(str.maketrans(string.punctuation, (" " * len(string.punctuation)))).split()
+        try:
+            coords = tuple(map(int, ls[-2:]))
+            if len(ls) == 2:
+                return (False, ) + coords
+            elif len(ls) == 3 and ls[0] == 'X':
+                return (True, ) + coords
+        except Exception as e:
+            print(f'Bad input: {e}. Please try again.')
+        return self.get_user_move()
 
-    def check_move(self):
-        if self.is_flagging == False:
-            # if mine is there at coordinate - game over
-            if self.dict_board[self.move] == "O":
-                if self.move in self.mines_and_nums:
-                    # don't let user hit a bomb on the first move
-                    is_first_move = self.countSpaces == self.board_rows * self.board_cols
-                    if is_first_move and self.mines_and_nums[self.move] == "*":
-                        ls = [coord for coord, x in self.mines_and_nums.items() if x != '*']
-                        random.shuffle(ls)
-                        free_coord = ls[0]
-                        self.mines_and_nums[self.move] = ' '
-                        self.mines_and_nums[free_coord] = '*'
-                        self.place_nums(free_coord[0], free_coord[1])
+    def make_move(self):
+        while True:
+            is_flagging, row, col = self.get_user_move()
+            move_coord = row, col
 
-                    if self.mines_and_nums[self.move] != "*":
-                        self.dict_board[self.move] = self.mines_and_nums[self.move]
-                        self.countSpaces -= 1
-                        self.print_board()
-                    else:
-                        self.dict_board[self.move] = self.mines_and_nums[self.move]
-                        self.print_board()
-                        print("Game Over!")
-                        raise SystemExit()
+            if move_coord not in self.dict_board:
+                print("That's not even a space on the board >_>")
+                break
+
+            elif not is_flagging:
+                self.check_move(move_coord)
+                break
+            elif is_flagging:
+                is_first_move = self.countSpaces == self.board_rows * self.board_cols
+                if is_first_move:
+                    print("You really want to place a flag on your first move?")
                 else:
-                    self.dict_board[self.move] = " "
-                    self.countSpaces -= 1
-                    self.uncover_space(self.move[0], self.move[1])
+                    self.toggle_flag(move_coord)
+                    break
+            else:
+                print("Invalid input. Please try again.")
+                self.print_board()
+
+    def toggle_flag(self, move_coord):
+            if self.dict_board[move_coord] == "O":
+                if self.count_flags < self.num_mines:
+                    self.dict_board[move_coord] = red_x
+                    self.count_flags += 1
                     self.print_board()
-            elif self.dict_board[self.move] == f"{Color.RED}X{Color.END}":
-                print("Uhmmm, you want to dig up a flag you put down??")
-            elif self.dict_board[self.move] != "O":
-                print("You already uncovered this space -_-")
+                else:
+                    print('You already placed as many flags as there are bombs.')
+            elif self.dict_board[move_coord] == red_x:
+                self.dict_board[move_coord] = "O"
+                self.count_flags -= 1
+                self.print_board()
+            else:
+                print("You want to waste flag on a space you already uncovered??? o_O")
+
+    def check_move(self, move_coord):
+        if self.dict_board[move_coord] == red_x:
+            print("Uhmmm, you want to dig up a flag you put down??")
+
+        elif self.dict_board[move_coord] != "O":
+            print("You already uncovered this space -_-")
+            self.print_board()
+
+        elif self.dict_board[move_coord] == "O":
+            if move_coord in self.mines_and_nums:
+                # don't let user hit a bomb on the first move
+                is_first_move = self.countSpaces == self.board_rows * self.board_cols
+                if is_first_move and self.mines_and_nums[move_coord] == "*":
+                    ls = [coord for coord, x in self.mines_and_nums.items() if x != '*']
+                    random.shuffle(ls)
+                    free_coord = ls[0]
+                    self.mines_and_nums[move_coord] = ' '
+                    self.mines_and_nums[free_coord] = '*'
+                    self.place_nums(free_coord[0], free_coord[1])
+
+                if self.mines_and_nums[move_coord] != "*":
+                    self.dict_board[move_coord] = self.mines_and_nums[move_coord]
+                    self.countSpaces -= 1
+                    self.print_board()
+                else:
+                    # mine is at coordinate - game over, man
+                    self.dict_board[move_coord] = self.mines_and_nums[move_coord]
+                    self.print_board()
+                    print("Game Over!")
+                    raise SystemExit()
+            else:
+                self.dict_board[move_coord] = " "
+                self.countSpaces -= 1
+                self.uncover_space(move_coord[0], move_coord[1])
                 self.print_board()
 
 
@@ -231,9 +230,9 @@ class Minesweeper:
     def start_game(self):
         self.define_level()
         self.make_board()
+        self.print_board()
         while True:
             self.make_move()
-            self.check_move()
             self.user_win()
 
 minesweeper = Minesweeper()
