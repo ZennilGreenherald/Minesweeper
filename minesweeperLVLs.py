@@ -140,6 +140,7 @@ class Minesweeper:
                     print("*BOOM* No flag for you! >:D")
             else:
                 print("Invalid input.  Please try again.")
+                self.print_board()
 
     def toggle_flag(self):
         if self.count_flags <= self.num_mines:
@@ -204,6 +205,7 @@ class Minesweeper:
                 print("Uhmmm, you want to dig up a flag you put down??")
             elif self.dict_board[self.move] != "O":
                 print("You already uncovered this space -_-")
+                self.print_board()
 
 
     def uncover_space(self, row, col):
@@ -223,18 +225,13 @@ class Minesweeper:
             print("Congrats you won! :D")
             raise SystemExit()
 
-    def game_play(self):
-        self.user_win()
-        self.make_move()
-        self.check_move()
-        self.game_play()
-
     def start_game(self):
         self.define_level()
         self.make_board()
-        self.make_move()
-        self.check_move()
-        self.game_play()
+        while True:
+            self.make_move()
+            self.check_move()
+            self.user_win()
 
 minesweeper = Minesweeper()
 minesweeper.start_game()
