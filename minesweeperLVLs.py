@@ -77,8 +77,22 @@ class Minesweeper:
             for c in range(self.board_cols):
                 self.dict_board[(r, c)] = "O"
         self.countSpaces = self.board_rows * self.board_cols
+        self.place_mines()
         self.print_board()
     
+    def place_mines(self):
+        mines_to_place = ['*'] * self.num_mines + [' '] * ((self.board_rows * self.board_cols) - self.num_mines)
+        random.shuffle(mines_to_place)
+        for r in range(self.board_rows):
+            for c in range(self.board_cols):
+                m = mines_to_place.pop()
+                if m == '*':
+                    coord = (r, c)
+                    if coord not in self.mines_and_nums or self.mines_and_nums[coord] != "*":
+                        self.mines_and_nums[coord] = "*"
+                        self.place_nums(r, c)
+                        self.count_mines += 1
+
     def print_board(self):
         print('    ' + ' '.join(str(c) for c in range(self.board_cols)))
         print('  ' + '-' * (self.board_cols * 2 + 1))
@@ -140,19 +154,6 @@ class Minesweeper:
             else:
                 print("You want to waste flag on a space you already uncovered??? o_O")
 
-    def place_mines(self):
-        mines_to_place = ['*'] * self.num_mines + [' '] * ((self.board_rows * self.board_cols) - self.num_mines)
-        random.shuffle(mines_to_place)
-        for r in range(self.board_rows):
-            for c in range(self.board_cols):
-                m = mines_to_place.pop()
-                if m == '*':
-                    coord = (r, c)
-                    if coord not in self.mines_and_nums or self.mines_and_nums[coord] != "*":
-                        self.mines_and_nums[coord] = "*"
-                        self.place_nums(r, c)
-                        self.count_mines += 1
-
     def neighbors(self, row, col):
         for r in range(row - 1, row + 2):
             for c in range(col - 1, col + 2):
@@ -172,9 +173,19 @@ class Minesweeper:
 
     def check_move(self):
         if self.is_flagging == False:
-        # if mine is there at coordinate - game over
+            # if mine is there at coordinate - game over
             if self.dict_board[self.move] == "O":
                 if self.move in self.mines_and_nums:
+                    # don't let user hit a bomb on the first move
+                    is_first_move = self.countSpaces == self.board_rows * self.board_cols
+                    if is_first_move and self.mines_and_nums[self.move] == "*":
+                        ls = [coord for coord, x in self.mines_and_nums.items() if x != '*']
+                        random.shuffle(ls)
+                        free_coord = ls[0]
+                        self.mines_and_nums[self.move] = ' '
+                        self.mines_and_nums[free_coord] = '*'
+                        self.place_nums(free_coord[0], free_coord[1])
+
                     if self.mines_and_nums[self.move] != "*":
                         self.dict_board[self.move] = self.mines_and_nums[self.move]
                         self.countSpaces -= 1
@@ -222,7 +233,6 @@ class Minesweeper:
         self.define_level()
         self.make_board()
         self.make_move()
-        self.place_mines()
         self.check_move()
         self.game_play()
 
