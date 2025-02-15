@@ -94,11 +94,14 @@ class Minesweeper:
                         self.count_mines += 1
 
     def print_board(self):
-        print('    ' + ' '.join(str(c) for c in range(self.board_cols)))
-        print('  ' + '-' * (self.board_cols * 2 + 1))
+        max_row_num_width = len(str(self.board_rows - 1))
+        print(' ' * (max_row_num_width + 3) + ' '.join(str(c // 10) if c >= 10 else ' ' for c in range(self.board_cols)))
+        print(' ' * (max_row_num_width + 3) + ' '.join(str(c % 10) for c in range(self.board_cols)))
+        print(' ' * (max_row_num_width + 1) + '-' * (self.board_cols * 2 + 1))
 
         for r in range(self.board_rows):
-            print(r, end = ' | ')
+            row_prefix = f'{" " * max_row_num_width}{r} | '[-(max_row_num_width + 3):]
+            print(row_prefix, end = '')
             for c in range(self.board_cols):
                 print(self.dict_board[(r,c)], end = " ")
             print()
