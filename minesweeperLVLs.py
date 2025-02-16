@@ -53,17 +53,14 @@ class Board:
                     coord = (r, c)
                     if coord not in self.mines_and_nums or self.mines_and_nums[coord] != "*":
                         self.mines_and_nums[coord] = "*"
-                        self.place_nums(r, c)
+                        self.place_nums_around_mine(r, c)
 
-    # method will use the coordinates of the mines that are placed
-    def place_nums(self, row, col):
-        for space in self.model_neighbors(row, col):
-            # if the coordinate is not in the dictionary yet, adds key and value
-            if space not in self.mines_and_nums:
-                self.mines_and_nums[space] = 1
-            # if the coordinate is already a key, increments the value up by 1
-            elif space in self.mines_and_nums and self.mines_and_nums[space] != "*":
-                self.mines_and_nums[space] += 1
+    def place_nums_around_mine(self, row, col):
+        for neighbor_coord in self.neighbor_coords(row, col):
+            if neighbor_coord not in self.mines_and_nums:
+                self.mines_and_nums[neighbor_coord] = 1
+            elif neighbor_coord in self.mines_and_nums and self.mines_and_nums[neighbor_coord] != "*":
+                self.mines_and_nums[neighbor_coord] += 1
 
     def print_board(self):
         max_row_num_width = len(str(self.board_rows - 1))
@@ -78,14 +75,14 @@ class Board:
                 print(self.dict_board[(r,c)], end = " ")
             print()
 
-    def model_neighbors(self, row, col):
+    def neighbor_coords(self, row, col):
         # finds neighboring spots in all 8 directions
         for r in range(row - 1, row + 2):
             for c in range(col - 1, col + 2):
                 if r >= 0 and c >= 0 and r < self.board_rows and c < self.board_cols and (r != row or c != col):
                     yield r, c
 
-    def model_toggle_flag(self, move_coord):
+    def toggle_flag(self, move_coord):
         if self.dict_board[move_coord] == "O":
             if self.count_flags < self.num_mines:
                 self.dict_board[move_coord] = Board.red_x
@@ -100,7 +97,7 @@ class Board:
         else:
             return FlagResult.SPOT_CLEAR
 
-    def model_check_move(self, move_coord):
+    def check_move(self, move_coord):
         if self.dict_board[move_coord] == Board.red_x:
             return CheckResult.SPOT_FLAGGED
 
@@ -116,7 +113,7 @@ class Board:
                 free_coord = ls[0]
                 self.mines_and_nums[move_coord] = ' '
                 self.mines_and_nums[free_coord] = '*'
-                self.place_nums(free_coord[0], free_coord[1])
+                self.place_nums_around_mine(free_coord[0], free_coord[1])
 
             self.dict_board[move_coord] = self.mines_and_nums[move_coord] if move_coord in self.mines_and_nums else ' '
             self.countSpaces -= 1
@@ -130,7 +127,7 @@ class Board:
                     return CheckResult.OK
 
     def uncover_space(self, row, col):
-        for space in self.model_neighbors(row, col):
+        for space in self.neighbor_coords(row, col):
             if self.dict_board[space] == "O":
                 if space not in self.mines_and_nums:
                     self.dict_board[space] = " "
@@ -242,7 +239,7 @@ class Minesweeper:
                 self.make_move()
 
     def toggle_flag(self, move_coord):
-        res = self.board.model_toggle_flag(move_coord)
+        res = self.board.toggle_flag(move_coord)
 
         if res == FlagResult.NO_FLAGS_LEFT:
             print('You already placed as many flags as there are bombs.')
@@ -251,7 +248,7 @@ class Minesweeper:
             print("You want to waste flag on a space you already uncovered??? o_O")
 
     def check_move(self, move_coord):
-        res = self.board.model_check_move(move_coord)
+        res = self.board.check_move(move_coord)
 
         if res == CheckResult.SPOT_FLAGGED:
             print("Uhmmm, you want to dig up a flag you put down??")
