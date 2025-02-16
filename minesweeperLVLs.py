@@ -64,16 +64,25 @@ class Board:
 
     def print_board(self):
         max_row_num_width = len(str(self.board_rows - 1))
-        print(' ' * (max_row_num_width + 3) + ' '.join(str(c // 10) if c >= 10 else ' ' for c in range(self.board_cols)))
-        print(' ' * (max_row_num_width + 3) + ' '.join(str(c % 10) for c in range(self.board_cols)))
-        print(' ' * (max_row_num_width + 1) + '-' * (self.board_cols * 2 + 1))
+        horiz_rule = ' ' * (max_row_num_width + 1) + '-' * (self.board_cols * 2 + 3)
+        corner_spaces = ' ' * (max_row_num_width + 3)
+        if self.board_cols > 10:
+            horiz_nums = corner_spaces + ' '.join(str(c // 10) if c >= 10 else ' ' for c in range(self.board_cols)) + '\n'
+        else: 
+            horiz_nums = ''
+        horiz_nums += corner_spaces + ' '.join(str(c % 10) for c in range(self.board_cols))
+        print(horiz_nums)
+        print(horiz_rule)
 
         for r in range(self.board_rows):
-            row_prefix = f'{" " * max_row_num_width}{r} | '[-(max_row_num_width + 3):]
-            print(row_prefix, end = '')
+            row_num = f'{" " * max_row_num_width}{r}'[-max_row_num_width:]
+            print(f'{row_num} | ', end = '')
             for c in range(self.board_cols):
                 print(self.dict_board[(r,c)], end = " ")
-            print()
+            print(f'| {row_num}')
+
+        print(horiz_rule)
+        print(horiz_nums)
 
     def neighbor_coords(self, row, col):
         # finds neighboring spots in all 8 directions
@@ -167,7 +176,7 @@ class Minesweeper:
             'num_mines': 99
         }
     ]
-    levels = ["beginner", "intermediate", "advanced", "custom"]
+    levels = ["b", "i", "a", "c"]
 
 
     def __init__(self):
@@ -175,8 +184,9 @@ class Minesweeper:
 
     def get_level(self):
         while True:
-            choice = input("Please choose a level (Beginner, Intermediate, Advanced, Custom, Quit): ").lower()
-            if choice == 'quit':
+            choice = input("Please choose a level: (B)eginner, (I)ntermediate, (A)dvanced, (C)ustom or (Q)uit: ").lower()
+            choice = choice[0] if choice else ''
+            if choice == 'q':
                 raise SystemExit()
             elif choice in Minesweeper.levels:
                 return choice
