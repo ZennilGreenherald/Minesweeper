@@ -24,30 +24,9 @@ class Color:
     YELLOW = "\033[33m"
     END = "\033[0m"
 
-red_x = f"{Color.RED}X{Color.END}"
-
-levels = ["beginner", "intermediate", "advanced", "custom"]
-
-# beginner = 9x9 w/ 10 mines
-# intermediate = 16x16 w/ 40 mines
-# advanced = 30x16 w/ 99 mines
-board_size_settings = [
-    {
-        'board_rows': 9,
-        'board_cols': 9,
-        'num_mines': 10
-    }, {
-        'board_rows': 16,
-        'board_cols': 16,
-        'num_mines': 40
-    }, {
-        'board_rows': 16,
-        'board_cols': 30,
-        'num_mines': 99
-    }
-]
-
 class Board:
+    red_x = f"{Color.RED}X{Color.END}"
+
     def __init__(self, rows, cols, mines):
         self.dict_board = {}
         self.mines_and_nums = {}
@@ -109,12 +88,12 @@ class Board:
     def model_toggle_flag(self, move_coord):
         if self.dict_board[move_coord] == "O":
             if self.count_flags < self.num_mines:
-                self.dict_board[move_coord] = red_x
+                self.dict_board[move_coord] = Board.red_x
                 self.count_flags += 1
                 return FlagResult.OK
             else:
                 return FlagResult.NO_FLAGS_LEFT
-        elif self.dict_board[move_coord] == red_x:
+        elif self.dict_board[move_coord] == Board.red_x:
             self.dict_board[move_coord] = "O"
             self.count_flags -= 1
             return FlagResult.OK
@@ -122,7 +101,7 @@ class Board:
             return FlagResult.SPOT_CLEAR
 
     def model_check_move(self, move_coord):
-        if self.dict_board[move_coord] == red_x:
+        if self.dict_board[move_coord] == Board.red_x:
             return CheckResult.SPOT_FLAGGED
 
         elif self.dict_board[move_coord] != "O":
@@ -173,6 +152,27 @@ class Board:
 
 
 class Minesweeper:
+    # beginner = 9x9 w/ 10 mines
+    # intermediate = 16x16 w/ 40 mines
+    # advanced = 30x16 w/ 99 mines
+    board_size_settings = [
+        {
+            'board_rows': 9,
+            'board_cols': 9,
+            'num_mines': 10
+        }, {
+            'board_rows': 16,
+            'board_cols': 16,
+            'num_mines': 40
+        }, {
+            'board_rows': 16,
+            'board_cols': 30,
+            'num_mines': 99
+        }
+    ]
+    levels = ["beginner", "intermediate", "advanced", "custom"]
+
+
     def __init__(self):
         self.board = None
 
@@ -181,7 +181,7 @@ class Minesweeper:
             choice = input("Please choose a level (Beginner, Intermediate, Advanced, Custom, Quit): ").lower()
             if choice == 'quit':
                 raise SystemExit()
-            elif choice in levels:
+            elif choice in Minesweeper.levels:
                 return choice
             else:
                 print("What kind of level is that?!?!?! >:O")
@@ -189,11 +189,12 @@ class Minesweeper:
     def define_level(self):
         # Get dimensions and number of mines with which to construct the board
         choice = self.get_level()
-        if choice in levels[:3]:
-            i = levels.index(choice)
-            rows = board_size_settings[i]['board_rows']
-            cols = board_size_settings[i]['board_cols']
-            mines  = board_size_settings[i]['num_mines']
+        if choice in Minesweeper.levels[:3]:
+            i = Minesweeper.levels.index(choice)
+            settings = Minesweeper.board_size_settings
+            rows  = settings[i]['board_rows']
+            cols  = settings[i]['board_cols']
+            mines = settings[i]['num_mines']
             self.board = Board(rows, cols, mines)
         # custom level
         else:
