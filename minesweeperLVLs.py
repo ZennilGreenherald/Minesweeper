@@ -225,25 +225,21 @@ class Minesweeper:
         return self.get_user_move()
 
     def make_move(self):
-        while True:
-            self.board.print_board()
+        self.board.print_board()
 
-            is_flagging, row, col = self.get_user_move()
-            move_coord = row, col
+        is_flagging, row, col = self.get_user_move()
+        move_coord = row, col
 
-            if not self.board.move_in_range(move_coord):
-                print("That's not even a space on the board >_>")
-                break
-
-            elif not is_flagging:
-                self.check_move(move_coord)
-                break
+        if not self.board.move_in_range(move_coord):
+            print("That's not even a space on the board >_>")
+        elif not is_flagging:
+            self.check_move(move_coord)
+        else:
+            if self.board.has_moved():
+                self.toggle_flag(move_coord)
             else:
-                if not self.board.has_moved():
-                    print("You really want to place a flag on your first move?")
-                else:
-                    self.toggle_flag(move_coord)
-                    break
+                print("You really want to place a flag on your first move?")
+                self.make_move()
 
     def toggle_flag(self, move_coord):
         res = self.board.model_toggle_flag(move_coord)
